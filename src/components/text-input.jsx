@@ -1,25 +1,32 @@
 import React from "react";
 import PropTypes from "prop-types";
+import cn from "classnames";
+import { FieldContext } from "components/field-context";
 
-export const TextInput = ({ ...props}) => {
+export const TextInput = ({  focusColor="pink", ...props }) => {
+    const id = React.useContext(FieldContext)
 
     return (
         <div className="mt-1">
             <input 
             {...props}
-            className="block w-full shadow-sm sm:text-sm focus:ring-pink-500 focus:border-pink-500 border-gray-300 rounded-md" 
+            id={id}
+            className={cn("block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", classByColor[focusColor])} 
             />
         </div>
     )
 }
 
 
-// Prop types
-    // id => string/number, required
-    // name for form submission => string/number, required
+// Different focus colors possible based on class
+const classByColor = {
+    pink: "focus:ring-pink-500 focus:border-pink-500",
+    blue: "focus:ring-blue-500 focus:border-blue-500",
+    yellow: "focus:ring-yellow-500 focus:border-yellow-500"
+}
+
 
 TextInput.propTypes = {
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    name: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    onChange: PropTypes.func
+    onChange: PropTypes.func,
+    focusColor: PropTypes.oneOf(["pink", "blue", "yellow"])
 }

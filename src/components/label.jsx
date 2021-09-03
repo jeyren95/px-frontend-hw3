@@ -1,20 +1,21 @@
-import PropTypes from "prop-types"
+import React from "react";
+import PropTypes from "prop-types";
+import { FieldContext } from "components/field-context";
 
-export const Label = ({ children, id }) => {
+export const Label = ({ children }) => {
+    const id = React.useContext(FieldContext)
+
     return (
         <div>
             <label htmlFor={id} className="block text-sm font-medium text-gray-900" >
                 { children }
-            </label>            
+            </label>          
         </div>
     )
 }
 
 
-// Prop types
-    // id to associate label with input => string or number, required
-    // children can be anything => node, required
+
 Label.propTypes = {
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    children: PropTypes.node.isRequired    
+    children: PropTypes.node  
 }
