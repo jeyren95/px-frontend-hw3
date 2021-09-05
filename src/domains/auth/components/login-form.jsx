@@ -9,6 +9,13 @@ export const LoginForm = () => {
     const [password, setPassword] = React.useState("")
 
     const login = useLogin()
+    const usernameRef = React.useRef()
+
+    // on load of login form, focus to the username input
+    React.useEffect(() => {
+        usernameRef.current.focus()
+    }, [])
+    
 
     return (  
         <form 
@@ -25,6 +32,7 @@ export const LoginForm = () => {
                 label="Username"
                 type="text"
                 onChange={(e) => setUsername(e.target.value)}
+                ref={usernameRef}
                 />
                 <TextField 
                 id="password"

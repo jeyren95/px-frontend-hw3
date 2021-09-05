@@ -116,12 +116,14 @@ export const Marketplace = () => {
         )
     }
 
+
     return (
         <>
             {authStatus === "anonymous" && 
             <main className="bg-gray-50 p-6 sm:p-12 min-h-screen">
                 <div className="max-w-md mx-auto px-4 sm:px-6 py-6 bg-white shadow">
-                    <LoginForm />
+                    <LoginForm        
+                    />
                 </div>
             </main>           
             }

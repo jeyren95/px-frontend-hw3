@@ -5,18 +5,19 @@ import { TextInput } from "components/text-input";
 import { Field } from "components/field";
 
 
-export const TextField = ({ label, id, ...inputProps}) => {
+export const TextField = React.forwardRef(function({ label, id, ...inputProps}, ref) {
 
     return (
         <Field id={id}>
             <Label>{label}</Label>
             <TextInput 
+            ref={ref}
             {...inputProps}               
             />
         </Field>
 
     )
-}
+})
 
 TextField.propTypes = {
     label: PropTypes.node,
