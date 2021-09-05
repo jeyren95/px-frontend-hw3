@@ -5,6 +5,7 @@ import React from "react";
 import { Button } from "components/button";
 import { ShoppingCartIcon } from "@heroicons/react/outline"
 
+
 export const ListingItem = (props) => {
     return (
         <div className="relative flex flex-col">
@@ -46,6 +47,7 @@ export const ListingItem = (props) => {
                     <Button
                     type="button" 
                     className="js-add-to-cart-btn items-center" 
+                    onClick={props.onClick}
                     >
                         <ShoppingCartIcon className="h-5 w-5 mr-2" />
                         ADD TO CART

@@ -1,42 +1,98 @@
 import React from "react";
-import { ListingItem } from "domains/marketplace/components/listing-item";
-import { LoginForm } from "domains/auth/components/login-form";
-import { useListings } from "domains/marketplace/hooks/use-listings";
-import { AuthContext } from "domains/auth/auth.state";
+import { ListingItem, CartItem, useListings } from "domains/marketplace";
+import { LoginForm, useAuth, useLogout } from "domains/auth";
+import { Button } from "components/button";
+import { ArrowCircleLeftIcon, ArrowCircleRightIcon } from "@heroicons/react/solid"
+import { ShoppingBagIcon } from "@heroicons/react/outline";
 
+// fetch shopping cart
+const fetchCart = (accessToken) => 
+    fetch("https://ecomm-service.herokuapp.com/marketplace/cart/items", {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            accept: "application/json"
+        }
+    })
+    .then((res) =>  res.json())
+    .catch((err) => console.log(err))
 
-// Attempt login
-const attemptLogin = (loginDetails) => 
-    fetch("https://ecomm-service.herokuapp.com/login", {        
+// add to cart
+const addToCart = (item, accessToken) =>
+    fetch("https://ecomm-service.herokuapp.com/marketplace/cart/items", {
         method: "POST",
         headers: {
+            Authorization: `Bearer ${accessToken}`,
+            accept: "application/json",
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(loginDetails)
+        body: JSON.stringify(item)
     })
-    .then((res) => {
-        if (res.ok) {
-            return res.json()
+    .then((res) => res.json())
+    .catch((err) => console.log(err))
+
+// delete item from cart
+const removeFromCart = (id, accessToken) => 
+    fetch(`https://ecomm-service.herokuapp.com/marketplace/cart/items/${id}`, {
+        method:  "DELETE",
+        headers: {
+            accept: "application/json",
+            Authorization: `Bearer ${accessToken}`
         }
-        throw new Error(res.statusText)
     })
+    .then((res) => res.json())
+    .catch((err) => console.log(err))
 
 
 
 export const Marketplace = () => {
-    const [username, setUsername] = React.useState("")
-    const [password, setPassword] = React.useState("")
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [shoppingCart, setShoppingCart] = React.useState(undefined)
+    const [totalPrice, setTotalPrice] = React.useState(0)
+    const { listings, page, setPage } = useListings()
+    const { authStatus, accessToken}  = useAuth()
+    const logout = useLogout()
+    
+    // reload shopping cart
+    const reloadShoppingCart = () => {
+        setIsLoading(true)
 
+        return fetchCart(accessToken)
+        .then((data) => {
+            if (data.length === 0) {
+                setShoppingCart(undefined)
+            } else {
+                setShoppingCart(data)
+            }
+        }) 
+        .then(() => setIsLoading(false))
+    }
 
-    const listings = useListings()
-    const { authStatus, login, logout }  = React.useContext(AuthContext)
+    // render shopping cart items
+    const renderShoppingCart = () => {
+        return shoppingCart.map((item) => 
+            <CartItem 
+                key={item._id}
+                imageUrl={item.listing.imageUrl}
+                title={item.listing.title}
+                price={item.listing.price}
+                onClick={() => {
+                    removeFromCart(item.listing._id, accessToken)
+                    .then(() => {
+                        setTotalPrice((Number(totalPrice) - Number(item.listing.price)*item.quantity).toFixed(2))
+                        reloadShoppingCart()
+                    })
+                }}
+                quantity={item.quantity}
+            />
+        )
+    }
 
-
-    // map items 
-    const renderItems = () => {
+    // render the listings 
+    const renderListings = () => {
         return listings.map((listing) => 
             <ListingItem 
                 key={listing._id}
+                id={listing._id}
                 title={listing.title}
                 description={listing.description}
                 price={listing.price}
@@ -45,45 +101,68 @@ export const Marketplace = () => {
                 availability={listing.availability}
                 numOfStock={listing.numOfStock}
                 onlyOne={listing.availability === "single-item"}
+                onClick={() => {              
+                    addToCart({
+                    listingId: listing._id,
+                    quantity: 1
+                    }, accessToken)
+                    .then(() => {
+                        setTotalPrice((Number(totalPrice) + Number(listing.price)).toFixed(2))
+                        reloadShoppingCart()
+                    })
+                    
+                }}
             />
         )
     }
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
-        attemptLogin({username, password})
-        .then((data) => {       
-            login(data.accessToken)
-        })
-        .catch((err) => console.log(err))
-
-    }
-
 
     return (
         <>
             {authStatus === "anonymous" && 
             <main className="bg-gray-50 p-6 sm:p-12 min-h-screen">
                 <div className="max-w-md mx-auto px-4 sm:px-6 py-6 bg-white shadow">
-                    <LoginForm 
-                    setUsername={(e) => setUsername(e.target.value)}
-                    setPassword={(e) => setPassword(e.target.value)}
-                    handleSubmit={handleSubmit}
-                    />
+                    <LoginForm />
                 </div>
             </main>           
             }
             {authStatus === "authenticated" && 
             <main className="bg-gray-50 lg:flex">
+                
             {/** Render items **/}
                 <div className="flex-1">
                     <div className="max-w-7xl mx-auto pt-16 pb-24 px-4 sm:px-6 lg:px-8">
+                        <div className="text-right">
+                            <Button type="button" onClick={logout}>Logout</Button>
+                        </div>
+                        
                         <div className="sm:flex sm:flex-col sm:align-center mb-12">
                             <h1 className="text-5xl font-extrabold text-gray-900 sm:text-center">Marketplace</h1>
+                            <div className="text-center mt-10">
+                                <Button 
+                                type="button" 
+                                className="ml-5 mr-5"
+                                onClick={() => {
+                                    if (page !== 1) {
+                                        setPage(page - 1)
+                                    }
+                                }}
+                                >
+                                    <ArrowCircleLeftIcon className="h-5 w-5 mr-3" />
+                                    Previous
+                                </Button>
+                                <span>Page {page}</span>
+                                <Button 
+                                type="button" 
+                                className="ml-5 mr-5"
+                                onClick={() => setPage(page + 1)}            
+                                >
+                                    <ArrowCircleRightIcon className="h-5 w-5 mr-3" />
+                                    Next
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-x-4 gap-y-8 xl:grid-cols-3 xl:gap-x-6">
-                            {listings && renderItems()}
+                            {listings && renderListings()}
                         </div>
                     </div>
                 </div>
@@ -99,21 +178,44 @@ export const Marketplace = () => {
                                 </div>
                             </div>
                         </div>
+               
+                        {shoppingCart && !isLoading &&
+                        <>
+                            {/** Shopping cart list and total price**/}
+                            <div>
+                                <ul id="cart-item-list" className="divide-y divide-gray-200">
+                                    {renderShoppingCart()}
+                                </ul>
+                            </div>
+                                
+                            <div className="flex-shrink-0 px-4 py-4 flex justify-end border-t border-gray-200">
+                                <span>
+                                    Total
+                                    <span className="text-3xl"> ${totalPrice}</span>
+                                </span>
+                            </div>
+
+                        </>                        
+                        }
+            
+                        {!shoppingCart && !isLoading &&
+                            <div className="px-4 sm:px-6 pb-12">
+                                <div className="pt-6 pb-5">
+                                    <div id="no-cart-item-message">
+                                        <div className="p-4 text-center">
+                                            <ShoppingBagIcon className="inline-block w-12 h-12 text-gray-300" />
+                                            <p className="text-center text-gray-500">There is no item in your shopping cart</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        }
+
+                        {isLoading &&
+                            <h3 className="text-center mt-10">Updating your cart...</h3>
+                        }
                         
-                        {/** Shopping cart list **/}
-                        <div>
-                            <ul id="cart-item-list" className="divide-y divide-gray-200">
-
-                            </ul>
-                        </div>
-
-                        <div className="flex-shrink-0 px-4 py-4 flex justify-end border-t border-gray-200">
-                            <span className="text-3xl">
-                                "Total"
-                                <span>2,650.00</span>
-                            </span>
-                        </div>
-
                     </div>
                 </div>
             </main>  
